@@ -59,4 +59,4 @@ g\:env: ## Generate .env from .env.example
 	@echo "Created .env from .env.example"
 
 g\:feature: ## Generate a new feature module (usage: make g:feature name=xxx)
-	cargo run --bin generator -- $(name)
+	cargo run -p generator -- $(name)

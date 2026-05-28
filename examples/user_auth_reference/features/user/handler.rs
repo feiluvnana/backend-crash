@@ -1,14 +1,13 @@
 use crate::{
     infra::{
         error::{AppError, ErrorResponse},
-        extractor::ValidatedJson,
+        extractor::{ValidatedJson, CurrentUser},
         pagination::{PaginationParams, PaginatedResponse},
     },
     features::user::{
         dto::{UserResponse, UpdateUserRequest},
         service::UserService,
     },
-    middleware::auth::CurrentUser,
 };
 use axum::{extract::{Query, State}, Json, http::StatusCode};
 use sea_orm::DatabaseConnection;

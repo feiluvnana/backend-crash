@@ -1,5 +1,3 @@
-//! Business logic features (auth, user, and health check modules).
+//! Business logic features (health check module).
 
-pub mod auth;
 pub mod health;
-pub mod user;

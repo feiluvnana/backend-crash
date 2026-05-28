@@ -8,10 +8,7 @@ use crate::{
         service::AuthService,
     },
     features::user::dto::UserResponse,
-    utils::{
-        crypto::{hash_password, verify_password},
-        jwt::generate_token,
-    },
+    utils::jwt::generate_token,
 };
 
 #[utoipa::path(
@@ -46,7 +43,7 @@ pub async fn register(
         return Err(AppError::Conflict("Email already exists".to_string()));
     }
 
-    let hashed = hash_password(&payload.password, config.bcrypt_cost)
+    let hashed = bcrypt::hash(&payload.password, config.bcrypt_cost)
         .map_err(|_| AppError::Internal("Failed to hash password".to_string()))?;
 
     let user = AuthService::create_user(&db, &payload, hashed).await?;
@@ -79,7 +76,7 @@ pub async fn login(
         .await?
         .ok_or_else(|| AppError::Unauthorized("Invalid credentials".to_string()))?;
 
-    let is_valid = verify_password(&payload.password, &user.password_hash)
+    let is_valid = bcrypt::verify(&payload.password, &user.password_hash)
         .map_err(|_| AppError::Internal("Failed to verify password".to_string()))?;
 
     if !is_valid {

@@ -27,13 +27,6 @@ impl AuthService {
             .await
     }
 
-    /// Find a user by their unique ID
-    pub async fn find_by_id(
-        db: &DatabaseConnection,
-        id: i32,
-    ) -> Result<Option<user::Model>, sea_orm::DbErr> {
-        user::Entity::find_by_id(id).one(db).await
-    }
 
     /// Create a new user in the database
     pub async fn create_user(

@@ -3,7 +3,6 @@ use rust_backend_boilerplate::{
     infra::config::Config,
     routes::{AppState, create_router},
 };
-use sea_orm::DatabaseConnection;
 
 pub struct TestApp {
     pub address: String,
