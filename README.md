@@ -1,63 +1,248 @@
-# Rust Backend Boilerplate
+# 🦀 Rust Backend Boilerplate
 
-Production-ready, modular Rust backend boilerplate using Axum, SeaORM, and PostgreSQL.
+[![CI](https://github.com/YOUR_USERNAME/rust-backend-boilerplate/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/rust-backend-boilerplate/actions/workflows/ci.yml)
 
-## Features
+A minimal, production-ready Rust backend boilerplate built with **Axum**, **SeaORM**, and **PostgreSQL**.
 
-- **Modular Architecture**: Features are organized under `src/features/` with isolated handlers, services, and DTOs.
-- **Database Migrations**: Integrated database migrations powered by `SeaORM` and managed via `migration` package.
-- **Granular Configs**: Fully environment-aware using dotenv and validation.
-- **Request Trace ID**: UUID request tracing middleware propagates `x-request-id` headers for seamless trace log mapping.
-- **Auto API documentation**: Interactive Swagger API docs automatically generated via `utoipa` at `/swagger-ui`.
-- **Docker Ready**: Multi-stage docker builds producing minimal (~30MB) images.
-- **Local CI Pipeline**: Validate code locally before checking in using `make ci`.
+Ships only infrastructure scaffolding — no opinionated business logic. Add your own features on top of a clean foundation.
 
-## Quick Start
+## ✨ What's Included
 
-### 1. Set Up Environment
-Copy the example environment file to generate `.env`:
+| Category | What you get |
+|---|---|
+| **Web Framework** | [Axum](https://github.com/tokio-rs/axum) with typed extractors and layered middleware |
+| **Database** | [SeaORM](https://github.com/SeaQL/sea-orm) + PostgreSQL with connection pooling and migrations |
+| **Validation** | `ValidatedJson<T>` custom extractor using [validator](https://github.com/Keats/validator) |
+| **Error Handling** | Structured `AppError` → JSON responses with auto PG error code mapping |
+| **Pagination** | Built-in `PaginatedResponse<T>` with page/per_page query params |
+| **API Docs** | Auto-generated Swagger UI at `/swagger-ui` via [utoipa](https://github.com/juhaku/utoipa) |
+| **Observability** | Structured tracing + `x-request-id` propagation middleware |
+| **Security Headers** | `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection` |
+| **CORS** | Configurable via `CORS_ORIGIN` env var |
+| **Code Generator** | `make g:feature name=xxx` scaffolds handler + service + DTO |
+| **Docker** | Multi-stage build producing a ~30MB Alpine image |
+| **CI** | GitHub Actions workflow (fmt → clippy → test) |
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- [Rust](https://rustup.rs/) (stable)
+- [PostgreSQL](https://www.postgresql.org/) (or Docker)
+- [cargo-watch](https://github.com/watchexec/cargo-watch) (`cargo install cargo-watch`)
+
+### 1. Clone & configure
+
 ```bash
-make g:env
+git clone https://github.com/YOUR_USERNAME/rust-backend-boilerplate.git
+cd rust-backend-boilerplate
+make g:env          # creates .env from .env.example
 ```
 
-### 2. Spin Up Database
-Start PostgreSQL using Docker:
+### 2. Start the database
+
 ```bash
-make docker:up
+make docker:up      # starts PostgreSQL via docker-compose
 ```
 
-### 3. Run Migrations & Start Server
-Run migrations and launch the dev server:
+### 3. Run migrations & start the server
+
 ```bash
-make db:up
-make run
+make db:up          # run pending migrations
+make run            # hot-reload dev server on :3000
 ```
 
-Access the API documentation at `http://localhost:3000/swagger-ui`.
+Open **http://localhost:3000/swagger-ui** to explore the API.
 
----
-
-## Makefile Grouped Commands
-
-Run `make help` to list all commands. The main namespaces are:
-
-- **App**: `make run`, `make check`, `make test`, `make fmt`, `make lint`, `make ci`
-- **Docker**: `make docker:up`, `make docker:down`, `make docker:build`, `make docker:logs`
-- **Database**: `make db:up`, `make db:down`
-- **Generators**: `make g:env`, `make g:feature name=<name>`
-
----
-
-## Folder Structure
+## 📁 Project Structure
 
 ```
-src/
-├── main.rs                    # Server bootstrap
-├── core/                      # Global extractors, pagination, errors, and configs
-├── db/                        # Database connectivity and models/entities
-├── features/                  # Business modules (auth, user, health)
-├── middleware/                # Route middlewares (auth, request ID)
-├── routes/                    # Route register and API Docs configurations
-├── utils/                     # Generic crypto and token utilities
-└── bin/                       # Boilerplate code generators
+.
+├── src/
+│   ├── main.rs                 # Entry point: config → db → router → serve
+│   ├── lib.rs                  # Module re-exports
+│   ├── db/
+│   │   └── setup.rs            # Database connection with pooling
+│   ├── features/               # Business logic (handler + service + dto)
+│   │   └── health/             # Example feature: health checks
+│   │       └── handler.rs
+│   ├── infra/                  # Cross-cutting infrastructure
+│   │   ├── config.rs           # Env-based configuration
+│   │   ├── error.rs            # AppError → JSON error responses
+│   │   ├── extractor.rs        # ValidatedJson<T> extractor
+│   │   └── pagination.rs       # PaginationParams + PaginatedResponse<T>
+│   ├── middleware/
+│   │   └── request_id.rs       # x-request-id tracing middleware
+│   └── routes/
+│       ├── mod.rs              # AppState + create_router()
+│       ├── health.rs           # Route definitions for /health
+│       └── swagger.rs          # OpenAPI spec (utoipa)
+├── migration/                  # SeaORM migration crate
+├── generator/                  # Feature scaffolding CLI
+├── examples/
+│   └── user_auth_reference/    # Full auth/user implementation for reference
+├── tests/                      # Integration tests
+├── Dockerfile                  # Multi-stage production build
+├── docker-compose.yml          # App + PostgreSQL
+└── Makefile                    # Developer commands
 ```
+
+## 🛠 Adding a New Feature
+
+### Step 1 — Scaffold
+
+```bash
+make g:feature name=product
+```
+
+This generates `src/features/product/{mod.rs, dto.rs, handler.rs, service.rs}` and registers the module.
+
+### Step 2 — Wire up routes
+
+Create `src/routes/product.rs`:
+
+```rust
+use axum::{routing::{get, post}, Router};
+use crate::{features::product::handler as product_handler, routes::AppState};
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/", get(product_handler::list).post(product_handler::create))
+        .route("/{id}", get(product_handler::get_by_id))
+}
+```
+
+### Step 3 — Register
+
+In `src/routes/mod.rs`:
+
+```rust
+pub mod product;
+
+// inside create_router():
+.nest("/products", product::router())
+```
+
+### Step 4 — Add to Swagger
+
+In `src/routes/swagger.rs`, add your handler paths and DTO schemas to `ApiDoc`.
+
+### Step 5 — Database (if needed)
+
+1. Create a migration: add a new file in `migration/src/`
+2. Register it in `migration/src/lib.rs`
+3. Create a SeaORM entity in `src/db/models/`
+4. Run `make db:up`
+
+> 💡 See `examples/user_auth_reference/` for a complete working example with auth, JWT, user CRUD, migrations, and tests.
+
+## 📋 Commands
+
+Run `make help` to see all available commands.
+
+| Command | Description |
+|---|---|
+| `make run` | Start dev server with hot-reload |
+| `make check` | Fast compilation check |
+| `make test` | Run all tests |
+| `make fmt` | Format code |
+| `make lint` | Run Clippy with `-D warnings` |
+| `make ci` | Full CI pipeline (fmt → lint → test) |
+| `make db:up` | Run pending migrations |
+| `make db:down` | Rollback last migration |
+| `make g:env` | Generate `.env` from `.env.example` |
+| `make g:feature name=xxx` | Scaffold a new feature module |
+| `make docker:up` | Start app + PostgreSQL containers |
+| `make docker:down` | Stop containers and remove volumes |
+| `make docker:build` | Build the Docker image |
+| `make docker:logs` | Tail container logs |
+
+## ⚙️ Configuration
+
+All configuration is read from environment variables (loaded from `.env` via [dotenvy](https://github.com/allan2/dotenvy)):
+
+| Variable | Default | Description |
+|---|---|---|
+| `POSTGRES_USER` | `postgres` | Database user |
+| `POSTGRES_PASSWORD` | `password` | Database password |
+| `POSTGRES_DB` | `backend_db` | Database name |
+| `POSTGRES_HOST` | `localhost` | Database host |
+| `POSTGRES_PORT` | `5432` | Database port |
+| `HOST` | `0.0.0.0` | Server bind address |
+| `PORT` | `3000` | Server port |
+| `CORS_ORIGIN` | `*` | Allowed CORS origin |
+| `RUST_LOG` | `info,sqlx=warn` | Tracing filter |
+
+Add new config fields to `src/infra/config.rs` and update `.env.example`.
+
+## 🏗 Architecture
+
+```
+Request
+  │
+  ▼
+┌─────────────────────────────────┐
+│  Tower Layers (main.rs)         │
+│  CORS → Body Limit → Compress  │
+│  → Trace → Catch Panic         │
+└─────────────┬───────────────────┘
+              │
+              ▼
+┌─────────────────────────────────┐
+│  API Middleware (routes/mod.rs) │
+│  Request ID → Security Headers │
+└─────────────┬───────────────────┘
+              │
+              ▼
+┌─────────────────────────────────┐
+│  Router                        │
+│  /api/health → health::router  │
+│  /swagger-ui → SwaggerUi       │
+└─────────────┬───────────────────┘
+              │
+              ▼
+┌─────────────────────────────────┐
+│  Handler                       │
+│  Extracts State, Path, Query,  │
+│  ValidatedJson from request    │
+│  Returns Result<Json, AppError>│
+└─────────────┬───────────────────┘
+              │
+              ▼
+┌─────────────────────────────────┐
+│  Service                       │
+│  Business logic + DB queries   │
+│  via SeaORM                    │
+└─────────────────────────────────┘
+```
+
+## 🐳 Docker
+
+Build and run with Docker Compose:
+
+```bash
+make docker:build   # build the image
+make docker:up      # start app + postgres
+make docker:logs    # watch logs
+```
+
+The Dockerfile uses a multi-stage build:
+1. **Build stage**: Compiles with `rust:alpine`, caches cargo registry and build artifacts
+2. **Runtime stage**: Copies only the binary to `alpine:3.18` (~30MB final image)
+
+## 📚 Reference Example
+
+The `examples/user_auth_reference/` directory contains a complete implementation of:
+
+- **User registration & login** with bcrypt password hashing
+- **JWT authentication** with token generation/verification
+- **`CurrentUser` extractor** for protected routes
+- **User CRUD** (get me, update me, list users, get by ID)
+- **Database migrations** (users table + role column)
+- **Integration tests** for auth and user endpoints
+
+Copy and adapt these files when building your own features.
+
+## License
+
+MIT

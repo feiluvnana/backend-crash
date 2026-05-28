@@ -57,6 +57,3 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: password
           POSTGRES_DB: backend_db
-          JWT_SECRET: testing_secret_key_needs_to_be_long_enough_for_jwt
-          JWT_EXPIRY_HOURS: 24
-          BCRYPT_COST: 4
