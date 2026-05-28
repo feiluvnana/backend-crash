@@ -1,5 +1,5 @@
-use anyhow::anyhow;
 use std::env;
+use std::error::Error;
 
 #[derive(Clone, Debug)]
 pub struct Config {
@@ -17,7 +17,7 @@ fn env_or(key: &str, default: &str) -> String {
 
 impl Config {
     /// Initialize configuration from environment variables and .env file
-    pub fn init() -> anyhow::Result<Self> {
+    pub fn init() -> Result<Self, Box<dyn Error>> {
         dotenvy::dotenv().ok();
 
         let database_url = match env::var("DATABASE_URL") {
@@ -29,7 +29,7 @@ impl Config {
                 let postgres_host = env_or("POSTGRES_HOST", "localhost");
                 let postgres_port = env_or("POSTGRES_PORT", "5432")
                     .parse::<u16>()
-                    .map_err(|e| anyhow!("POSTGRES_PORT must be a valid u16: {}", e))?;
+                    .map_err(|e| format!("POSTGRES_PORT must be a valid u16: {e}"))?;
                 format!(
                     "postgres://{}:{}@{}:{}/{}",
                     postgres_user, postgres_password, postgres_host, postgres_port, postgres_db
@@ -42,15 +42,15 @@ impl Config {
 
         let port = env_or("PORT", "3000")
             .parse::<u16>()
-            .map_err(|e| anyhow!("PORT must be a valid u16: {}", e))?;
+            .map_err(|e| format!("PORT must be a valid u16: {e}"))?;
 
         let db_max_connections = env_or("DB_MAX_CONNECTIONS", "100")
             .parse::<u32>()
-            .map_err(|e| anyhow!("DB_MAX_CONNECTIONS must be a valid u32: {}", e))?;
+            .map_err(|e| format!("DB_MAX_CONNECTIONS must be a valid u32: {e}"))?;
 
         let db_min_connections = env_or("DB_MIN_CONNECTIONS", "5")
             .parse::<u32>()
-            .map_err(|e| anyhow!("DB_MIN_CONNECTIONS must be a valid u32: {}", e))?;
+            .map_err(|e| format!("DB_MIN_CONNECTIONS must be a valid u32: {e}"))?;
 
         Ok(Config {
             database_url,

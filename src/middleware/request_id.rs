@@ -16,10 +16,8 @@ pub async fn request_id_middleware(mut request: Request, next: Next) -> Response
         .insert("x-request-id", header_val.clone());
 
     let span = info_span!("request", request_id = %request_id);
-    let mut response = {
-        let _guard = span.enter();
-        next.run(request).await
-    };
+    use tracing::Instrument;
+    let mut response = next.run(request).instrument(span).await;
 
     response.headers_mut().insert("x-request-id", header_val);
     response

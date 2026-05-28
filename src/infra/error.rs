@@ -7,7 +7,6 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub enum AppError {
     BadRequest(String),
     Unauthorized(String),
@@ -16,6 +15,22 @@ pub enum AppError {
     Conflict(String),
     ValidationError(validator::ValidationErrors),
     Internal(String),
+    ServiceUnavailable(String),
+}
+
+impl std::fmt::Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::BadRequest(msg)
+            | Self::Unauthorized(msg)
+            | Self::Forbidden(msg)
+            | Self::NotFound(msg)
+            | Self::Conflict(msg)
+            | Self::Internal(msg)
+            | Self::ServiceUnavailable(msg) => write!(f, "{}", msg),
+            Self::ValidationError(errs) => write!(f, "Validation error: {}", errs),
+        }
+    }
 }
 
 #[derive(Serialize, ToSchema, Debug)]
@@ -41,6 +56,7 @@ impl AppError {
             Self::Conflict(_) => (StatusCode::CONFLICT, "CONFLICT"),
             Self::ValidationError(_) => (StatusCode::UNPROCESSABLE_ENTITY, "VALIDATION_FAILED"),
             Self::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, "INTERNAL_ERROR"),
+            Self::ServiceUnavailable(_) => (StatusCode::SERVICE_UNAVAILABLE, "SERVICE_UNAVAILABLE"),
         }
     }
 }
@@ -69,15 +85,15 @@ impl IntoResponse for AppError {
                 tracing::error!("Internal server error: {msg}");
                 ("An unexpected error occurred".to_string(), None)
             }
-            _ => {
-                let msg = match &self {
-                    AppError::BadRequest(m)
-                    | AppError::Unauthorized(m)
-                    | AppError::Forbidden(m)
-                    | AppError::NotFound(m)
-                    | AppError::Conflict(m) => m.clone(),
-                    _ => unreachable!(),
-                };
+            AppError::ServiceUnavailable(msg) => {
+                tracing::error!("Service unavailable: {msg}");
+                (msg, None)
+            }
+            AppError::BadRequest(msg)
+            | AppError::Unauthorized(msg)
+            | AppError::Forbidden(msg)
+            | AppError::NotFound(msg)
+            | AppError::Conflict(msg) => {
                 tracing::warn!("{error_code} error: {msg}");
                 (msg, None)
             }

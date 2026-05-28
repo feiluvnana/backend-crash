@@ -8,7 +8,7 @@ use rust_backend_boilerplate::{
 };
 
 #[tokio::main]
-async fn main() -> anyhow::Result<()> {
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize configuration
     let config = Config::init()?;
 

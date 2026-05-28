@@ -4,11 +4,10 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 use crate::infra::error::{AppError, ErrorResponse};
-
 #[derive(Serialize, ToSchema)]
 pub struct HealthStatus {
-    pub status: String,
-    pub version: String,
+    pub status: &'static str,
+    pub version: &'static str,
 }
 
 #[utoipa::path(
@@ -22,8 +21,8 @@ pub async fn health() -> (StatusCode, Json<HealthStatus>) {
     (
         StatusCode::OK,
         Json(HealthStatus {
-            status: "ok".to_string(),
-            version: env!("CARGO_PKG_VERSION").to_string(),
+            status: "ok",
+            version: env!("CARGO_PKG_VERSION"),
         }),
     )
 }
@@ -42,7 +41,7 @@ pub async fn readiness(State(db): State<DatabaseConnection>) -> Result<StatusCod
         "SELECT 1".to_string(),
     ))
     .await
-    .map_err(|e| AppError::Internal(format!("Database health check failed: {e}")))?;
+    .map_err(|e| AppError::ServiceUnavailable(format!("Database health check failed: {e}")))?;
 
     Ok(StatusCode::OK)
 }

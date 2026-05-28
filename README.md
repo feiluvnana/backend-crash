@@ -21,7 +21,7 @@ Ships only infrastructure scaffolding — no opinionated business logic. Add you
 | **CORS** | Configurable via `CORS_ORIGIN` env var |
 | **Code Generator** | `make g:feature name=xxx` scaffolds handler + service + DTO |
 | **Docker** | Multi-stage build producing a ~30MB Alpine image |
-| **CI** | GitHub Actions workflow (fmt → clippy → test) |
+| **CI** | GitHub Actions workflow (fmt → clippy) |
 
 ## 🚀 Quick Start
 

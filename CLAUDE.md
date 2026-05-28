@@ -32,7 +32,6 @@ This is a **Cargo workspace** with three members:
 │       ├── mod.rs          # AppState, create_router(), FromRef impls
 │       ├── health.rs       # Route definitions for /health
 │       └── swagger.rs      # utoipa OpenApi derive with ApiDoc
-└── tests/                 # Integration tests (spawn real server + reqwest)
 ```
 
 ## Key Patterns — FOLLOW THESE
@@ -194,10 +193,9 @@ All configuration comes from environment variables loaded via `dotenvy`. Add new
 |---|---|
 | `make run` | Hot-reload dev server (`cargo watch -x run`) |
 | `make check` | Fast compilation check |
-| `make test` | Run all tests |
 | `make fmt` | Format code |
 | `make lint` | Clippy with `-D warnings` |
-| `make ci` | Full CI: fmt check → clippy → test |
+| `make ci` | Full CI: fmt check → clippy |
 | `make db:up` | Run pending migrations |
 | `make db:down` | Rollback last migration |
 | `make g:env` | Copy `.env.example` → `.env` |
@@ -211,8 +209,7 @@ All configuration comes from environment variables loaded via `dotenvy`. Add new
 3. **Return types are always `Result<(StatusCode, Json<T>), AppError>`** for handlers that return data, or `Result<StatusCode, AppError>` for empty responses.
 4. **Feature names must be `snake_case`**, route URL paths must be `kebab-case`.
 5. **Use `sea_orm::sqlx::Error`** (not direct `sqlx`) when matching database errors — the crate does not have a direct `sqlx` dependency.
-6. **Integration tests** spawn a real server on a random port using `tests/common/spawn_app()`. The test database must be running.
-7. **Migrations** go in the `migration/` crate. Add new migration modules to `migration/src/lib.rs`.
+6. **Migrations** go in the `migration/` crate. Add new migration modules to `migration/src/lib.rs`.
 8. **The `generator/` crate is a workspace member** — it compiles separately and does not affect main app build times.
 9. **Do NOT add business-specific dependencies to root `Cargo.toml`** unless they're used by the core infrastructure. Feature-specific deps should be evaluated for necessity.
 10. **`examples/user_auth_reference/`** is the canonical reference for how to build auth, JWT, user CRUD, and custom extractors. Consult it when building similar features.
