@@ -931,7 +931,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "generator"
+name = "g"
 version = "0.1.0"
 
 [[package]]

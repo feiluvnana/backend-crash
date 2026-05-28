@@ -1,3 +1,4 @@
+#[path = "../db/mod.rs"]
 pub mod db;
 pub mod features;
 pub mod infra;

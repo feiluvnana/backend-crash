@@ -7,7 +7,7 @@ fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         eprintln!("Error: Feature name is required.");
-        eprintln!("Usage: cargo run --bin generator <feature_name>");
+        eprintln!("Usage: make g:feature name=<feature_name>");
         std::process::exit(1);
     }
 

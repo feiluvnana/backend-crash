@@ -24,6 +24,8 @@ async fn main() -> anyhow::Result<()> {
 
     // Connect to Database & Run Migrations
     let db = connect_db(&config.database_url, 100, 5).await?;
+    use migration::MigratorTrait;
+    migration::Migrator::up(&db, None).await?;
 
     // Create AppState
     let state = AppState {
