@@ -1,32 +1,62 @@
-.PHONY: help up down run check test fmt lint migrate-up migrate-down
+.PHONY: help setup run check test fmt lint \
+        docker\:up docker\:down docker\:build docker\:logs \
+        db\:up db\:down \
+        g\:env g\:feature \
+        ci
 
 help: ## Show this help message
 	@echo "Available commands:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-15s\033[0m %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_:.-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | \
+		awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-up: ## Start the Postgres database container in the background
-	docker-compose up -d
+setup: g\:env ## Bootstrap environment and install cargo-watch
+	cargo install cargo-watch
 
-down: ## Stop the database container and remove volumes
-	docker-compose down -v
-
-run: ## Run the backend application with environment variables
-	cargo run
+# ─── App ──────────────────────────────────────────
+run: ## Run the backend application with hot-reloading
+	cargo watch -x run
 
 check: ## Fast compilation check
 	cargo check
 
-test: ## Run tests
+test: ## Run all tests
 	cargo test
 
-fmt: ## Format the code automatically
+fmt: ## Format code
 	cargo fmt --all
 
-lint: ## Run cargo clippy lints
+lint: ## Run clippy lints
 	cargo clippy --all-targets -- -D warnings
 
-migrate-up: ## Run database migrations (manual command)
+ci: ## Run full CI pipeline locally (fmt + lint + test)
+	cargo fmt --all -- --check
+	cargo clippy --all-targets -- -D warnings
+	cargo test
+
+# ─── Docker ───────────────────────────────────────
+docker\:up: ## Start all containers (app + postgres)
+	docker compose up -d
+
+docker\:down: ## Stop all containers and remove volumes
+	docker compose down -v
+
+docker\:build: ## Build the Docker image
+	docker compose build
+
+docker\:logs: ## Tail container logs
+	docker compose logs -f
+
+# ─── Database ─────────────────────────────────────
+db\:up: ## Run database migrations
 	cargo run -p migration -- up
 
-migrate-down: ## Rollback the last database migration
+db\:down: ## Rollback the last migration
 	cargo run -p migration -- down
+
+# ─── Generators ───────────────────────────────────
+g\:env: ## Generate .env from .env.example
+	@cp .env.example .env
+	@echo "Created .env from .env.example"
+
+g\:feature: ## Generate a new feature module (usage: make g:feature name=xxx)
+	cargo run --bin generator -- $(name)

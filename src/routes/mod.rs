@@ -1,16 +1,22 @@
 use axum::{
-    extract::FromRef,
-    middleware::from_fn_with_state,
-    routing::get,
-    routing::post,
     Router,
+    extract::FromRef,
+    middleware::from_fn,
+    http::HeaderValue,
 };
 use sea_orm::DatabaseConnection;
+use tower_http::set_header::SetResponseHeaderLayer;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
+
+pub mod swagger;
+pub mod auth;
+pub mod user;
+pub mod health;
 
 use crate::{
-    config::Config,
-    handlers::{auth, user},
-    middleware::auth::auth_middleware,
+    infra::config::Config,
+    middleware::request_id::request_id_middleware,
 };
 
 #[derive(Clone)]
@@ -32,16 +38,26 @@ impl FromRef<AppState> for Config {
 }
 
 pub fn create_router(state: AppState) -> Router {
-    let auth_routes = Router::new()
-        .route("/register", post(auth::register))
-        .route("/login", post(auth::login));
-
-    let user_routes = Router::new()
-        .route("/me", get(user::get_me))
-        .route_layer(from_fn_with_state(state.clone(), auth_middleware));
+    let api_routes = Router::new()
+        .nest("/auth", auth::router())
+        .nest("/users", user::router(state.clone()))
+        .nest("/health", health::router())
+        .layer(from_fn(request_id_middleware))
+        .layer(SetResponseHeaderLayer::overriding(
+            axum::http::header::X_CONTENT_TYPE_OPTIONS,
+            HeaderValue::from_static("nosniff"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            axum::http::header::X_FRAME_OPTIONS,
+            HeaderValue::from_static("DENY"),
+        ))
+        .layer(SetResponseHeaderLayer::overriding(
+            axum::http::header::X_XSS_PROTECTION,
+            HeaderValue::from_static("1; mode=block"),
+        ));
 
     Router::new()
-        .nest("/api/auth", auth_routes)
-        .nest("/api/users", user_routes)
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", swagger::ApiDoc::openapi()))
+        .nest("/api", api_routes)
         .with_state(state)
 }

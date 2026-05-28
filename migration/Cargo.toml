@@ -11,6 +11,7 @@ path = "src/lib.rs"
 sea-orm-migration = { version = "1.1.4", features = ["runtime-tokio-rustls", "sqlx-postgres"] }
 async-trait = "0.1"
 tokio = { version = "1.52.3", features = ["full"] }
+dotenvy = "0.15.7"
 
 [[bin]]
 name = "migration"

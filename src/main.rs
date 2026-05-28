@@ -1,32 +1,30 @@
-use anyhow::Ok;
+use axum::http::HeaderValue;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnRequest, DefaultOnResponse};
+use tower_http::cors::{Any, CorsLayer};
+use tower_http::limit::RequestBodyLimitLayer;
 use tracing::info;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-mod config;
-mod database;
-mod handlers;
-mod middleware;
-mod models;
-mod routes;
-mod utils;
+use rust_backend_boilerplate::{
+    db::setup::connect_db,
+    infra::config::Config,
+    routes::{create_router, AppState},
+};
 
-use config::Config;
-use database::connect_db;
-use routes::{create_router, AppState};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    // Initialize tracing
+    // Initialize configuration
+    let config = Config::init()?;
+
+    // Initialize tracing with EnvFilter
     tracing_subscriber::registry()
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| "info,sqlx=warn".into()))
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    // Load configuration
-    let config = Config::init();
-
     // Connect to Database & Run Migrations
-    let db = connect_db(&config.database_url).await?;
+    let db = connect_db(&config.database_url, 100, 5).await?;
 
     // Create AppState
     let state = AppState {
@@ -34,7 +32,10 @@ async fn main() -> anyhow::Result<()> {
         config: config.clone(),
     };
 
-    // Setup routes
+    let allowed_origin = config.cors_origin.parse::<HeaderValue>()
+        .unwrap_or_else(|_| HeaderValue::from_static("*"));
+
+    // Setup routes and application layers
     let app = create_router(state)
         .layer(tower_http::catch_panic::CatchPanicLayer::new())
         .layer(
@@ -43,13 +44,28 @@ async fn main() -> anyhow::Result<()> {
                 .on_request(DefaultOnRequest::new())
                 .on_response(DefaultOnResponse::new()),
         )
-        .layer(tower_http::compression::CompressionLayer::new());
+        .layer(tower_http::compression::CompressionLayer::new())
+        .layer(RequestBodyLimitLayer::new(2_097_152)) // 2MB Limit
+        .layer(
+            CorsLayer::new()
+                .allow_origin(allowed_origin)
+                .allow_methods(Any)
+                .allow_headers(Any)
+        );
 
-    // Bind and serve
+    // Bind and serve with graceful shutdown
     let addr = format!("{}:{}", config.host, config.port);
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     info!("Listening on {}", listener.local_addr()?);
-    axum::serve(listener, app).await?;
+    
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async {
+            tokio::signal::ctrl_c()
+                .await
+                .expect("Failed to listen for ctrl_c signal");
+            info!("Graceful shutdown initiated");
+        })
+        .await?;
 
     Ok(())
 }
