@@ -1,3 +1,4 @@
+use crate::{infra::config::Config, middleware::request_id::request_id_middleware};
 use axum::{Router, extract::FromRef, http::HeaderValue, middleware::from_fn};
 use sea_orm::DatabaseConnection;
 use tower_http::set_header::SetResponseHeaderLayer;
@@ -6,9 +7,6 @@ use utoipa_swagger_ui::SwaggerUi;
 
 pub mod health;
 pub mod swagger;
-
-use crate::{infra::config::Config, middleware::request_id::request_id_middleware};
-
 #[derive(Clone)]
 pub struct AppState {
     pub db: DatabaseConnection,
