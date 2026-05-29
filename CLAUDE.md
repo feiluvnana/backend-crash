@@ -11,7 +11,7 @@ This is a **Cargo workspace** with three members:
 ```
 .                          # Main app (axum server)
 ├── migration/             # SeaORM migration runner (separate crate)
-├── generator/             # Feature scaffolding CLI tool (separate crate)
+├── g/                     # Feature scaffolding CLI tool (separate crate)
 ├── examples/              # Reference implementations (not compiled)
 │   └── user_auth_reference/
 ├── src/
@@ -36,17 +36,13 @@ This is a **Cargo workspace** with three members:
 
 ## Key Patterns — FOLLOW THESE
 
-### Adding a New Feature
+### Adding a New Feature or CRUD Resource
 
-Use the generator: `make g:feature name=my_feature` (or `cargo run -p generator -- my_feature`)
-
-This creates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs}` and registers it in `src/features/mod.rs`.
-
-**After generation, you must manually:**
-1. Add a route file at `src/routes/my_feature.rs` with a `pub fn router() -> Router<AppState>` function
-2. Register `pub mod my_feature;` in `src/routes/mod.rs`
-3. Add `.nest("/my-feature", my_feature::router())` inside `create_router()` in `src/routes/mod.rs`
-4. Add handler paths and DTO schemas to `src/routes/swagger.rs` `ApiDoc`
+Use the generator:
+- **Full CRUD Resource**: `make g:resource name=my_resource` (or `cargo run -p g -- resource my_resource`)
+  This scaffolds a database-backed CRUD resource (DTOs, handlers, services, and routes) and automatically registers them in routing and Swagger.
+- **Simple Feature Placeholder**: `make g:feature name=my_feature` (or `cargo run -p g -- feature my_feature`)
+  This creates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs}` and registers it in `src/features/mod.rs`. You must register routing manually.
 
 ### Handler Pattern
 
@@ -200,6 +196,7 @@ All configuration comes from environment variables loaded via `dotenvy`. Add new
 | `make db:down` | Rollback last migration |
 | `make g:env` | Copy `.env.example` → `.env` |
 | `make g:feature name=xxx` | Scaffold a new feature module |
+| `make g:resource name=xxx` | Scaffold a NestJS-like CRUD resource module |
 | `make docker:up` | Start app + postgres via docker-compose |
 
 ## Critical Rules
@@ -210,6 +207,6 @@ All configuration comes from environment variables loaded via `dotenvy`. Add new
 4. **Feature names must be `snake_case`**, route URL paths must be `kebab-case`.
 5. **Use `sea_orm::sqlx::Error`** (not direct `sqlx`) when matching database errors — the crate does not have a direct `sqlx` dependency.
 6. **Migrations** go in the `migration/` crate. Add new migration modules to `migration/src/lib.rs`.
-8. **The `generator/` crate is a workspace member** — it compiles separately and does not affect main app build times.
+8. **The `g/` crate is a workspace member** — it compiles separately and does not affect main app build times.
 9. **Do NOT add business-specific dependencies to root `Cargo.toml`** unless they're used by the core infrastructure. Feature-specific deps should be evaluated for necessity.
 10. **`examples/user_auth_reference/`** is the canonical reference for how to build auth, JWT, user CRUD, and custom extractors. Consult it when building similar features.

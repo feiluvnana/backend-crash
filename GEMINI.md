@@ -43,22 +43,34 @@ Cargo workspace with three members:
 │       └── swagger.rs   # utoipa OpenApi derive (ApiDoc)
 ```
 
-## How to Add a New Feature (step-by-step)
+## How to Add a New Feature or Resource (step-by-step)
 
-### Step 1: Scaffold
+### Method A: Scaffold a Full CRUD Resource (Recommended)
+
+To generate a complete, database-backed CRUD resource (handlers, services, DTOs, routing, and automatic module/route/Swagger registration):
+
+```bash
+make g:resource name=my_resource
+```
+
+### Method B: Scaffold a Simple Feature Placeholder
+
+To generate a simple blank feature template:
 
 ```bash
 make g:feature name=my_feature
 ```
 
-This generates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs}` and auto-registers in `src/features/mod.rs`.
+This generates `src/features/my_feature/{mod.rs, dto.rs, handler.rs, service.rs}` and registers it in `src/features/mod.rs`. You will need to manually wire routes and Swagger.
 
-### Step 2: Create Route File
+### Manual Steps (only for simple features generated with `g:feature`)
+
+#### Step 1: Create Route File
 
 Create `src/routes/my_feature.rs`:
 
 ```rust
-use axum::{routing::{get, post}, Router};
+use axum::{routing::get, Router};
 use crate::{features::my_feature::handler as my_feature_handler, routes::AppState};
 
 pub fn router() -> Router<AppState> {
@@ -68,11 +80,11 @@ pub fn router() -> Router<AppState> {
 }
 ```
 
-### Step 3: Register in `src/routes/mod.rs`
+#### Step 2: Register in `src/routes/mod.rs`
 
 Add `pub mod my_feature;` and `.nest("/my-feature", my_feature::router())` inside `create_router()`.
 
-### Step 4: Register in `src/routes/swagger.rs`
+#### Step 3: Register in `src/routes/swagger.rs`
 
 Add handler paths to `paths(...)` and DTO schemas to `components(schemas(...))` in the `#[openapi(...)]` attribute on `ApiDoc`.
 
@@ -192,6 +204,7 @@ Implement `FromRef<AppState>` for new state types in `src/routes/mod.rs`.
 | `make db:migration name=xxx` | Generate a new migration script |
 | `make db:entity` | Auto-generate/update database models/entities |
 | `make g:feature name=xxx` | Scaffold a new feature module |
+| `make g:resource name=xxx` | Scaffold a NestJS-like CRUD resource module |
 | `make docker:up` | Start app + postgres |
 
 ## Rules

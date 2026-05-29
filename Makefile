@@ -66,4 +66,9 @@ g\:env: ## Generate .env from .env.example
 	@echo "Created .env from .env.example"
 
 g\:feature: ## Generate a new feature module (usage: make g:feature name=xxx)
-	cargo run -p g -- $(name)
+	@if [ -z "$(name)" ]; then echo "Error: name is required. Usage: make g:feature name=xxx"; exit 1; fi
+	cargo run -p g -- feature $(name)
+
+g\:resource: ## Generate a NestJS-like CRUD resource (usage: make g:resource name=xxx)
+	@if [ -z "$(name)" ]; then echo "Error: name is required. Usage: make g:resource name=xxx"; exit 1; fi
+	cargo run -p g -- resource $(name)
