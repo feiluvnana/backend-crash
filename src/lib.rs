@@ -1,7 +1,10 @@
-#[path = "../db/mod.rs"]
-pub mod db;
+#[path = "../database/mod.rs"]
+pub mod database;
+
+pub mod config;
+pub mod error;
 pub mod extractors;
-pub mod features;
-pub mod infra;
 pub mod middleware;
+pub mod pagination;
 pub mod routes;
+pub mod health;

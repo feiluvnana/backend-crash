@@ -1,9 +1,11 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{Json, Router, extract::State, http::StatusCode, routing::get};
 use sea_orm::{ConnectionTrait, DatabaseConnection, Statement};
 use serde::Serialize;
 use utoipa::ToSchema;
 
-use crate::infra::error::{AppError, ErrorResponse};
+use crate::error::{AppError, ErrorResponse};
+use crate::routes::AppState;
+
 #[derive(Serialize, ToSchema)]
 pub struct HealthStatus {
     pub status: &'static str,
@@ -44,4 +46,10 @@ pub async fn readiness(State(db): State<DatabaseConnection>) -> Result<StatusCod
     .map_err(|e| AppError::ServiceUnavailable(format!("Database health check failed: {e}")))?;
 
     Ok(StatusCode::OK)
+}
+
+pub fn router() -> Router<AppState> {
+    Router::new()
+        .route("/", get(health))
+        .route("/ready", get(readiness))
 }

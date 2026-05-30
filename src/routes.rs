@@ -1,4 +1,3 @@
-use crate::{infra::config::Config, middleware::request_id::request_id_middleware};
 use axum::{Router, extract::FromRef, http::HeaderValue, middleware::from_fn};
 use sea_orm::DatabaseConnection;
 use tower_http::cors::{Any, CorsLayer};
@@ -8,7 +7,22 @@ use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-pub mod swagger;
+use crate::{config::Config, middleware::request_id_middleware};
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        crate::health::health,
+        crate::health::readiness,
+    ),
+    components(schemas(
+        crate::health::HealthStatus,
+        crate::error::ErrorResponse,
+        crate::error::FieldError,
+        crate::pagination::PageMeta,
+    ))
+)]
+pub struct ApiDoc;
 
 #[derive(Clone)]
 pub struct AppState {
@@ -36,7 +50,7 @@ pub fn create_router(state: AppState) -> Router {
         .unwrap_or_else(|_| HeaderValue::from_static("*"));
 
     let api_routes = Router::new()
-        .nest("/health", crate::features::health::router::router())
+        .nest("/health", crate::health::router())
         .layer(from_fn(request_id_middleware));
 
     // Security headers (nosniff, DENY, 1; mode=block)
@@ -56,7 +70,7 @@ pub fn create_router(state: AppState) -> Router {
 
     Router::new()
         .merge(
-            SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", swagger::ApiDoc::openapi()),
+            SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()),
         )
         .nest("/api", api_routes)
         .layer(tower_http::catch_panic::CatchPanicLayer::new())

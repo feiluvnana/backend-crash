@@ -1,5 +1,5 @@
 [workspace]
-members = [".", "db/migrations", "g"]
+members = [".", "database/migrations"]
 
 [package]
 name = "rust-backend-boilerplate"

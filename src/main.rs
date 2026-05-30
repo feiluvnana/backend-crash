@@ -2,8 +2,8 @@ use tracing::info;
 use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitExt};
 
 use rust_backend_boilerplate::{
-    db::setup::connect_db,
-    infra::config::Config,
+    database::setup::connect_db,
+    config::Config,
     routes::{AppState, create_router},
 };
 
