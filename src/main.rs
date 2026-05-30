@@ -3,8 +3,8 @@ use tracing_subscriber::{EnvFilter, layer::SubscriberExt, util::SubscriberInitEx
 
 use rust_backend_boilerplate::{
     database::setup::connect_db,
-    config::Config,
-    routes::{AppState, create_router},
+    infra::config::Config,
+    infra::routes::{AppState, create_router},
 };
 
 #[tokio::main]

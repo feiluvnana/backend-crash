@@ -7,19 +7,19 @@ use tower_http::trace::TraceLayer;
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use crate::{config::Config, middleware::request_id_middleware};
+use crate::{infra::config::Config, middleware::request_id_middleware};
 
 #[derive(OpenApi)]
 #[openapi(
     paths(
-        crate::health::health,
-        crate::health::readiness,
+        crate::features::health::handler::health,
+        crate::features::health::handler::readiness,
     ),
     components(schemas(
-        crate::health::HealthStatus,
-        crate::error::ErrorResponse,
-        crate::error::FieldError,
-        crate::pagination::PageMeta,
+        crate::features::health::handler::HealthStatus,
+        crate::types::error::ErrorResponse,
+        crate::types::error::FieldError,
+        crate::types::pagination::PageMeta,
     ))
 )]
 pub struct ApiDoc;
@@ -50,7 +50,7 @@ pub fn create_router(state: AppState) -> Router {
         .unwrap_or_else(|_| HeaderValue::from_static("*"));
 
     let api_routes = Router::new()
-        .nest("/health", crate::health::router())
+        .nest("/health", crate::features::health::router())
         .layer(from_fn(request_id_middleware));
 
     // Security headers (nosniff, DENY, 1; mode=block)
@@ -69,9 +69,7 @@ pub fn create_router(state: AppState) -> Router {
     }
 
     Router::new()
-        .merge(
-            SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()),
-        )
+        .merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))
         .nest("/api", api_routes)
         .layer(tower_http::catch_panic::CatchPanicLayer::new())
         .layer(TraceLayer::new_for_http())
