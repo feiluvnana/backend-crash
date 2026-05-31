@@ -10,6 +10,23 @@ db\:down:
 db\:migration:
 	sea-orm-cli migrate -d database/migrations generate $(name)
 
+ifeq ($(OS),Windows_NT)
+db\:entity:
+	@powershell -NoProfile -Command "\
+		if (Test-Path .env) { \
+			$$env:DATABASE_URL = (Get-Content .env | Select-String '^DATABASE_URL=' | ForEach-Object { $$_.Line.Split('=', 2)[1].Trim('\"''') }); \
+		} \
+		if (-not $$env:DATABASE_URL) { \
+			Write-Error 'DATABASE_URL is not set'; \
+			exit 1; \
+		} \
+		Write-Host 'Generating entities from' $$env:DATABASE_URL '...'; \
+		sea-orm-cli generate entity --database-url $$env:DATABASE_URL -o database/models \
+	"
+
+env\:setup:
+	@if not exist .env (copy .env.example .env & echo Created .env from .env.example) else (echo .env already exists)
+else
 db\:entity:
 	@if [ -f .env ]; then \
 		export $$(grep -v '^#' .env | xargs); \
@@ -28,6 +45,7 @@ env\:setup:
 	else \
 		echo ".env already exists"; \
 	fi
+endif
 scaffold\:feature:
 	cargo run --bin scaffold feature $(name)
 
@@ -36,6 +54,18 @@ scaffold\:middleware:
 
 scaffold\:extractor:
 	cargo run --bin scaffold extractor $(name)
+
+docker\:build:
+	docker compose build
+
+docker\:up:
+	docker compose up -d
+
+docker\:down:
+	docker compose down
+
+docker\:logs:
+	docker compose logs -f
 
 format:
 	cargo fmt
@@ -49,4 +79,5 @@ test:
 clean:
 	cargo clean
 
-.PHONY: run db\:up db\:down db\:migration db\:entity env\:setup scaffold\:feature scaffold\:middleware scaffold\:extractor format lint test clean
+.PHONY: run db\:up db\:down db\:migration db\:entity env\:setup scaffold\:feature scaffold\:middleware scaffold\:extractor docker\:build docker\:up docker\:down docker\:logs format lint test clean
+

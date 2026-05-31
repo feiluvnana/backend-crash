@@ -43,6 +43,12 @@ Infrastructure scaffolding only — no business logic ships.
 
 ### Add New Feature
 
+> [!TIP]
+> You can automatically scaffold a new feature (including directory creation, boilerplate files, router, and route registration) by running:
+> ```bash
+> make scaffold:feature name=my_feature
+> ```
+
 1. Create `src/features/my_feature/` with:
    - `mod.rs` — exports handler, service, repository; re-exports `router()`
    - `handler.rs` — handlers + DTO structs + `pub fn router() -> Router<AppState>`
@@ -206,6 +212,13 @@ pub mod database;
 | `make db:migration name=xxx` | Generate new migration |
 | `make db:entity` | Auto-generate entity models from DB |
 | `make env:setup` | Copy `.env.example` → `.env` |
+| `make scaffold:feature name=xxx` | Generate new feature directory, handlers, services, and repositories |
+| `make scaffold:middleware name=xxx` | Generate new middleware template |
+| `make scaffold:extractor name=xxx` | Generate new custom extractor template |
+| `make docker:build` | Build Docker images using Docker Compose |
+| `make docker:up` | Spin up application container in the background |
+| `make docker:down` | Shut down running Docker Compose containers |
+| `make docker:logs` | Follow Docker container logs |
 
 ## Rules
 
