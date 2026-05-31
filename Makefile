@@ -28,5 +28,25 @@ env\:setup:
 	else \
 		echo ".env already exists"; \
 	fi
+scaffold\:feature:
+	cargo run --bin scaffold feature $(name)
 
-.PHONY: run db\:up db\:down db\:migration db\:entity env\:setup
+scaffold\:middleware:
+	cargo run --bin scaffold middleware $(name)
+
+scaffold\:extractor:
+	cargo run --bin scaffold extractor $(name)
+
+format:
+	cargo fmt
+
+lint:
+	cargo clippy --all-targets --all-features -- -D warnings
+
+test:
+	cargo test
+
+clean:
+	cargo clean
+
+.PHONY: run db\:up db\:down db\:migration db\:entity env\:setup scaffold\:feature scaffold\:middleware scaffold\:extractor format lint test clean
